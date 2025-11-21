@@ -1,27 +1,29 @@
-# Quizzy – Single-Player Jeopardy Game
+# Single-Player Jeopardy Game
 
 ## Overview
-Quizzy is a simple, browser-based Jeopardy-style quiz game.  
+This is a simple, browser-based Jeopardy-style quiz game.  
 Players can select questions from different categories, view them in a popup, and track their score. This version is **single-player** and runs entirely in the browser — no backend required.
 
 ---
 
 ## Screenshot
 
-![Quizzy Screenshot](.\"Screenshot 2025-11-20 170622.png")  
+![Quizzy Screenshot](./jeopardy_example.png)  
 *Example view of the game board with categories and score.*
 
 ---
 
 ## Repository Structure
 
-/Quizzy
+```text
+Jeopardy/
 │
 ├── index.html # Main HTML page for the game
 ├── style.css # Styles for the game board, tiles, modal, and score
 ├── script.js # JavaScript logic for category headers, tiles, modal, and score
 ├── screenshot.png # Screenshot of the game
 └── README.md # Project documentation
+```
 
 
 ---
