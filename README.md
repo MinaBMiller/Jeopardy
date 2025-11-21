@@ -21,7 +21,7 @@ Jeopardy/
 ├── index.html # Main HTML page for the game
 ├── style.css # Styles for the game board, tiles, modal, and score
 ├── script.js # JavaScript logic for category headers, tiles, modal, and score
-├── screenshot.png # Screenshot of the game
+├── jeopardy_example.png # Screenshot of the game
 └── README.md # Project documentation
 ```
 
