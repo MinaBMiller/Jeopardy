@@ -1,0 +1,26 @@
+[
+  {
+    "title": "Math",
+    "questions": [
+      { "value": 100, "question": "2 + 2", "answer": "4" },
+      { "value": 200, "question": "5 x 6", "answer": "30" },
+      { "value": 300, "question": "12 / 3", "answer": "4" }
+    ]
+  },
+  {
+    "title": "Science",
+    "questions": [
+      { "value": 100, "question": "Water's chemical formula", "answer": "H2O" },
+      { "value": 200, "question": "The Earth is a ___", "answer": "planet" },
+      { "value": 300, "question": "Gas humans breathe in", "answer": "oxygen" }
+    ]
+  },
+  {
+    "title": "History",
+    "questions": [
+      { "value": 100, "question": "Who was the first US President?", "answer": "George Washington" },
+      { "value": 200, "question": "Year WW2 ended", "answer": "1945" },
+      { "value": 300, "question": "Ancient civilization that built pyramids", "answer": "Egyptians" }
+    ]
+  }
+]
