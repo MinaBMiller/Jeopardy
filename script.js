@@ -1,45 +1,30 @@
 // ------------------------------------
-// Game Data
+// Load Questions From External JSON
 // ------------------------------------
-const categories = [
-  {
-    title: "Math",
-    questions: [
-      { value: 100, question: "2 + 2", answer: "4" },
-      { value: 200, question: "5 x 6", answer: "30" },
-      { value: 300, question: "12 / 3", answer: "4" }
-    ]
-  },
-  {
-    title: "Science",
-    questions: [
-      { value: 100, question: "Water's chemical formula", answer: "H2O" },
-      { value: 200, question: "The Earth is a ___", answer: "planet" },
-      { value: 300, question: "Gas humans breathe in", answer: "oxygen" }
-    ]
-  },
-  {
-    title: "History",
-    questions: [
-      { value: 100, question: "Who was the first US President?", answer: "George Washington" },
-      { value: 200, question: "Year WW2 ended", answer: "1945" },
-      { value: 300, question: "Ancient civilization that built pyramids", answer: "Egyptians" }
-    ]
-  }
-];
+let categories = [];
+
+fetch("questions.json")
+  .then(res => res.json())
+  .then(data => {
+    categories = data;
+    buildGameBoard();  // Build AFTER loading JSON
+  })
+  .catch(err => console.error("Error loading questions.json:", err));
+
 
 // ------------------------------------
 // DOM Elements
 // ------------------------------------
 const board = document.getElementById("game-board");
 const categoryRow = document.getElementById("category-row");
-const modal = document.getElementById("question-modal");
+const modal = document.getElementById("modal");            // FIXED
 const questionText = document.getElementById("question-text");
 const closeBtn = document.getElementById("close-btn");
 const timerEl = document.getElementById("timer");
-const answerInput = document.getElementById("answer-input");
+const answerInput = document.getElementById("user-answer"); // FIXED
 const submitBtn = document.getElementById("submit-answer");
 const scoreDisplay = document.getElementById("score");
+
 
 // ------------------------------------
 // Game State
@@ -50,8 +35,9 @@ let score = 0;
 let currentAnswer = "";
 let currentValue = 0;
 
+
 // ------------------------------------
-// Fuzzy Matching (Levenshtein Distance)
+// Levenshtein Distance (Fuzzy Matching)
 // ------------------------------------
 function levenshtein(a, b) {
   const matrix = [];
@@ -63,46 +49,42 @@ function levenshtein(a, b) {
 
   for (let i = 1; i <= lenA; i++) {
     for (let j = 1; j <= lenB; j++) {
-      if (a[i-1] === b[j-1]) matrix[i][j] = matrix[i-1][j-1];
-      else {
+      if (a[i - 1] === b[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
         matrix[i][j] = Math.min(
-          matrix[i-1][j] + 1,
-          matrix[i][j-1] + 1,
-          matrix[i-1][j-1] + 1
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + 1
         );
       }
     }
   }
-
   return matrix[lenA][lenB];
 }
 
-// Similarity score between 0 and 1
-function similarity(a, b) {
-  const dist = levenshtein(a, b);
-  const maxLen = Math.max(a.length, b.length);
-  return 1 - dist / maxLen;
-}
 
 // ------------------------------------
-// Number to Words (for numeric answers)
+// Number → Word Converter
 // ------------------------------------
 function numberToWords(num) {
   const ones = ["zero","one","two","three","four","five","six","seven","eight","nine"];
-  const teens = ["ten","eleven","twelve","thirteen","fourteen","fifteen",
-                 "sixteen","seventeen","eighteen","nineteen"];
+  const teens = ["ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen",
+                 "seventeen","eighteen","nineteen"];
   const tens = ["", "", "twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
-  
+
   if (num < 10) return ones[num];
   if (num < 20) return teens[num - 10];
   if (num < 100) {
-    return tens[Math.floor(num/10)] + (num % 10 !== 0 ? " " + ones[num % 10] : "");
+    return tens[Math.floor(num / 10)] +
+      (num % 10 !== 0 ? " " + ones[num % 10] : "");
   }
   return num.toString();
 }
 
+
 // ------------------------------------
-// Timer Functions
+// Timer Controls
 // ------------------------------------
 function startTimer() {
   clearInterval(timerInterval);
@@ -129,6 +111,7 @@ function handleTimeUp() {
   closeModal();
 }
 
+
 // ------------------------------------
 // Modal Controls
 // ------------------------------------
@@ -144,51 +127,58 @@ function closeModal() {
   modal.classList.add("hidden");
 }
 
+
 // ------------------------------------
-// Build Game Board
+// Build Game Board (After JSON Loads)
 // ------------------------------------
-const numCategories = categories.length;
-categoryRow.style.gridTemplateColumns = `repeat(${numCategories}, 1fr)`;
-board.style.gridTemplateColumns = `repeat(${numCategories}, 1fr)`;
+function buildGameBoard() {
+  const numCategories = categories.length;
 
-// Add category headers
-categories.forEach(cat => {
-  const header = document.createElement("div");
-  header.classList.add("category-title");
-  header.textContent = cat.title;
-  categoryRow.appendChild(header);
-});
+  categoryRow.style.gridTemplateColumns = `repeat(${numCategories}, 1fr)`;
+  board.style.gridTemplateColumns = `repeat(${numCategories}, 1fr)`;
 
-// Add question tiles row by row
-const maxRows = Math.max(...categories.map(c => c.questions.length));
-
-for (let row = 0; row < maxRows; row++) {
+  // Create category headers
   categories.forEach(cat => {
-    const q = cat.questions[row];
-    const tile = document.createElement("div");
-    tile.classList.add("tile");
-
-    if (q) {
-      tile.textContent = q.value;
-      tile.addEventListener("click", () => {
-        if (!tile.classList.contains("used")) {
-          tile.classList.add("used");
-          currentAnswer = q.answer.toLowerCase().trim();
-          currentValue = q.value;
-          openModal(q.question);
-        }
-      });
-    } else {
-      tile.textContent = "";
-      tile.style.visibility = "hidden";
-    }
-
-    board.appendChild(tile);
+    const header = document.createElement("div");
+    header.classList.add("category-title");
+    header.textContent = cat.title;
+    categoryRow.appendChild(header);
   });
+
+  // Determine max rows
+  const maxRows = Math.max(...categories.map(c => c.questions.length));
+
+  // Create question tiles
+  for (let row = 0; row < maxRows; row++) {
+    categories.forEach(cat => {
+      const q = cat.questions[row];
+      const tile = document.createElement("div");
+      tile.classList.add("tile");
+
+      if (q) {
+        tile.textContent = q.value;
+
+        tile.addEventListener("click", () => {
+          if (!tile.classList.contains("used")) {
+            tile.classList.add("used");
+            currentAnswer = q.answer.toLowerCase().trim();
+            currentValue = q.value;
+            openModal(q.question);
+          }
+        });
+
+      } else {
+        tile.style.visibility = "hidden";
+      }
+
+      board.appendChild(tile);
+    });
+  }
 }
 
+
 // ------------------------------------
-// Answer Submission with Fuzzy, Numeric & Jeopardy Checks
+// Answer Submission
 // ------------------------------------
 submitBtn.addEventListener("click", () => {
   stopTimer();
@@ -196,17 +186,16 @@ submitBtn.addEventListener("click", () => {
   const user = answerInput.value.toLowerCase().trim();
   const correct = currentAnswer.toLowerCase().trim();
 
-  // 1. Jeopardy question form
-  const validForm = (
+  // Jeopardy phrasing required
+  const validForm =
     user.startsWith("what is") ||
     user.startsWith("who is") ||
     user.startsWith("what are") ||
     user.startsWith("who are") ||
     user.startsWith("what's") ||
-    user.startsWith("who's")
-  );
+    user.startsWith("who's");
 
-  // 2. Clean input
+  // Clean up answers
   const cleanedUser = user
     .replace(/^(what is|what are|who is|who are|what's|who's)/, "")
     .replace(/[^a-z0-9 ]/g, "")
@@ -214,30 +203,26 @@ submitBtn.addEventListener("click", () => {
 
   const cleanedCorrect = correct.replace(/[^a-z0-9 ]/g, "").trim();
 
-  console.log("User raw:", user);
-  console.log("Cleaned user:", cleanedUser);
-  console.log("Correct answer:", currentAnswer);
-  console.log("Cleaned correct:", cleanedCorrect);
-  console.log("Valid Jeopardy form:", validForm);
-
-  // 3. Handle numeric answers (digits or words)
+  // Numeric handling
   let numericAccepted = false;
   if (!isNaN(Number(cleanedCorrect))) {
     const wordForm = numberToWords(Number(cleanedCorrect));
-    numericAccepted = cleanedUser === cleanedCorrect || cleanedUser === wordForm;
-    console.log("Numeric check:", numericAccepted, cleanedUser, cleanedCorrect, wordForm);
+    numericAccepted =
+      cleanedUser === cleanedCorrect || cleanedUser === wordForm;
   }
 
-  // 4. Fuzzy similarity
+  // Fuzzy matching
   const dist = levenshtein(cleanedUser, cleanedCorrect);
-  let allowedDistance = cleanedCorrect.length <= 4 ? 1 : 2;
+  const allowedDistance = cleanedCorrect.length <= 4 ? 1 : 2;
   const fuzzyAccepted = dist <= allowedDistance;
-  console.log("Levenshtein dist:", dist, "Allowed:", allowedDistance, "Fuzzy accepted:", fuzzyAccepted);
 
-  // 5. Final correctness
-  const isCorrect = validForm && (numericAccepted || cleanedUser.includes(cleanedCorrect) || cleanedCorrect.includes(cleanedUser) || fuzzyAccepted);
-
-  console.log("Is Correct?", isCorrect);
+  // Final check
+  const isCorrect =
+    validForm &&
+    (numericAccepted ||
+     cleanedUser.includes(cleanedCorrect) ||
+     cleanedCorrect.includes(cleanedUser) ||
+     fuzzyAccepted);
 
   if (isCorrect) {
     alert(`Correct! +${currentValue}`);
@@ -251,6 +236,5 @@ submitBtn.addEventListener("click", () => {
   closeModal();
 });
 
-
-// Close modal button
+// Close modal
 closeBtn.addEventListener("click", closeModal);

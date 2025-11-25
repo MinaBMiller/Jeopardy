@@ -8,24 +8,24 @@
 </head>
 <body>
 
-  <h1>Jeopardy!</h1>
+  <h1>Jeopardy</h1>
+  <h2 id="score">Score: 0</h2>
 
   <div id="category-row"></div>
   <div id="game-board"></div>
 
   <!-- Question Modal -->
-  <div id="question-modal" class="modal hidden">
+  <div id="modal" class="modal hidden">
     <div class="modal-content">
 
       <span id="close-btn">&times;</span>
 
       <h2 id="question-text"></h2>
 
-      <!-- Countdown Timer -->
       <div id="timer">30</div>
 
       <div id="answer-section">
-        <input type="text" id="answer-input" placeholder="Your answer">
+        <input type="text" id="user-answer" placeholder="Your answer">
         <button id="submit-answer">Submit</button>
       </div>
 
