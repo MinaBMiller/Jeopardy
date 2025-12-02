@@ -9,29 +9,52 @@
 <body>
 
   <h1>Syntax Jeopardy</h1>
+  <div id="player-scores">
+  <div class="player-score" id="p1-score">Player 1: 0</div>
+  <div class="player-score" id="p2-score">Player 2: 0</div>
+  <div class="player-score" id="p3-score">Player 3: 0</div>
+  </div>
+
   <h2 id="score">Score: 0</h2>
 
+  <!-- Category headers -->
   <div id="category-row"></div>
+
+  <!-- Game tiles -->
   <div id="game-board"></div>
 
-  <!-- Question Modal -->
+  <!-- Buzzing Status -->
+  <div id="buzz-display" class="buzz-display hidden"></div>
+
+
+  <!-- ============================= -->
+  <!--     QUESTION MODAL WINDOW     -->
+  <!-- ============================= -->
   <div id="modal" class="modal hidden">
     <div class="modal-content">
 
-      <span id="close-btn">&times;</span>
+      <span id="close-btn" class="close">&times;</span>
 
-      <h2 id="question-text"></h2>
+      <h2 id="question-text">Question appears here</h2>
 
+      <!-- Main game timer -->
       <div id="timer">30</div>
 
+      <!-- Answer Box: Initially disabled by JS -->
       <div id="answer-section">
-        <input type="text" id="user-answer" placeholder="Who is... What is... Where is...">
+        <input 
+          type="text" 
+          id="user-answer" 
+          placeholder="Who is... What is... Where is..."
+          autocomplete="off"
+        >
         <button id="submit-answer">Submit</button>
       </div>
 
     </div>
   </div>
 
+  <!-- Game Script -->
   <script src="script.js"></script>
 </body>
 </html>

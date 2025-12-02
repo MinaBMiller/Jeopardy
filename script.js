@@ -7,9 +7,22 @@ fetch("questions.json")
   .then(res => res.json())
   .then(data => {
     categories = data;
-    buildGameBoard();  // Build AFTER loading JSON
+    buildGameBoard();
   })
   .catch(err => console.error("Error loading questions.json:", err));
+
+
+// ------------------------------------
+// PLAYER SETUP
+// ------------------------------------
+const players = [
+  { name: "Player 1", score: 0, key: "a" },
+  { name: "Player 2", score: 0, key: "l" },
+  { name: "Player 3", score: 0, key: " " },  // spacebar
+];
+
+let buzzingEnabled = false;
+let buzzWinner = null;
 
 
 // ------------------------------------
@@ -17,13 +30,47 @@ fetch("questions.json")
 // ------------------------------------
 const board = document.getElementById("game-board");
 const categoryRow = document.getElementById("category-row");
-const modal = document.getElementById("modal");            // FIXED
+const modal = document.getElementById("modal");
 const questionText = document.getElementById("question-text");
 const closeBtn = document.getElementById("close-btn");
 const timerEl = document.getElementById("timer");
-const answerInput = document.getElementById("user-answer"); // FIXED
+const answerInput = document.getElementById("user-answer");
 const submitBtn = document.getElementById("submit-answer");
 const scoreDisplay = document.getElementById("score");
+const buzzDisplay = document.getElementById("buzz-display");
+const p1ScoreEl = document.getElementById("p1-score");
+const p2ScoreEl = document.getElementById("p2-score");
+const p3ScoreEl = document.getElementById("p3-score");
+
+
+
+// ------------------------------------
+// Allow all typing once buzzed
+// Disable until buzzed
+// ------------------------------------
+answerInput.disabled = true;
+submitBtn.disabled = true;
+
+
+// ------------------------------------
+// BUZZER LISTENER
+// ------------------------------------
+document.addEventListener("keydown", (e) => {
+  if (!buzzingEnabled) return;
+
+  const key = e.key.toLowerCase();
+
+  if (key === "a") return handleBuzz(1);
+  if (key === "l") return handleBuzz(2);
+  if (key === " " || e.code === "Space") return handleBuzz(3);
+});
+
+function updatePlayerScores() {
+  p1ScoreEl.textContent = `${players[0].name}: ${players[0].score}`;
+  p2ScoreEl.textContent = `${players[1].name}: ${players[1].score}`;
+  p3ScoreEl.textContent = `${players[2].name}: ${players[2].score}`;
+}
+
 
 
 // ------------------------------------
@@ -37,54 +84,7 @@ let currentValue = 0;
 
 
 // ------------------------------------
-// Levenshtein Distance (Fuzzy Matching)
-// ------------------------------------
-function levenshtein(a, b) {
-  const matrix = [];
-  const lenA = a.length;
-  const lenB = b.length;
-
-  for (let i = 0; i <= lenA; i++) matrix[i] = [i];
-  for (let j = 0; j <= lenB; j++) matrix[0][j] = j;
-
-  for (let i = 1; i <= lenA; i++) {
-    for (let j = 1; j <= lenB; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j - 1] + 1
-        );
-      }
-    }
-  }
-  return matrix[lenA][lenB];
-}
-
-
-// ------------------------------------
-// Number → Word Converter
-// ------------------------------------
-function numberToWords(num) {
-  const ones = ["zero","one","two","three","four","five","six","seven","eight","nine"];
-  const teens = ["ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen",
-                 "seventeen","eighteen","nineteen"];
-  const tens = ["", "", "twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
-
-  if (num < 10) return ones[num];
-  if (num < 20) return teens[num - 10];
-  if (num < 100) {
-    return tens[Math.floor(num / 10)] +
-      (num % 10 !== 0 ? " " + ones[num % 10] : "");
-  }
-  return num.toString();
-}
-
-
-// ------------------------------------
-// Timer Controls
+// Timer
 // ------------------------------------
 function startTimer() {
   clearInterval(timerInterval);
@@ -105,7 +105,7 @@ function stopTimer() {
 
 function handleTimeUp() {
   stopTimer();
-  alert(`⏳ Time's up! -${currentValue}\nCorrect answer was: ${currentAnswer}`);
+  alert(`Time's up! -${currentValue}\nCorrect: ${currentAnswer}`);
   score -= currentValue;
   scoreDisplay.textContent = "Score: " + score;
   closeModal();
@@ -115,21 +115,55 @@ function handleTimeUp() {
 // ------------------------------------
 // Modal Controls
 // ------------------------------------
-function openModal(question) {
+function openModal(questionObj) {
   modal.classList.remove("hidden");
-  questionText.textContent = question;
+  questionText.textContent = questionObj;
+
   answerInput.value = "";
+  answerInput.disabled = true;
+  submitBtn.disabled = true;
+
+  buzzWinner = null;
+  enableBuzzers();
+
   startTimer();
 }
 
 function closeModal() {
   stopTimer();
   modal.classList.add("hidden");
+  buzzingEnabled = false;
+
+  answerInput.disabled = true;
+  submitBtn.disabled = true;
 }
 
 
 // ------------------------------------
-// Build Game Board (After JSON Loads)
+// BUZZER SYSTEM
+// ------------------------------------
+function enableBuzzers() {
+  buzzingEnabled = true;
+  buzzWinner = null;
+
+  buzzDisplay.textContent = "Buzzers live! (A, L, SPACE)";
+  buzzDisplay.classList.remove("hidden");
+}
+
+function handleBuzz(playerNum) {
+  buzzingEnabled = false;
+  buzzWinner = players[playerNum - 1];
+
+  buzzDisplay.textContent = `${buzzWinner.name} buzzed in!`;
+  answerInput.disabled = false;
+  submitBtn.disabled = false;
+
+  answerInput.focus();
+}
+
+
+// ------------------------------------
+// Build Game Board
 // ------------------------------------
 function buildGameBoard() {
   const numCategories = categories.length;
@@ -137,7 +171,7 @@ function buildGameBoard() {
   categoryRow.style.gridTemplateColumns = `repeat(${numCategories}, 1fr)`;
   board.style.gridTemplateColumns = `repeat(${numCategories}, 1fr)`;
 
-  // Create category headers
+  // Category headers
   categories.forEach(cat => {
     const header = document.createElement("div");
     header.classList.add("category-title");
@@ -145,10 +179,9 @@ function buildGameBoard() {
     categoryRow.appendChild(header);
   });
 
-  // Determine max rows
   const maxRows = Math.max(...categories.map(c => c.questions.length));
 
-  // Create question tiles
+  // Question tiles
   for (let row = 0; row < maxRows; row++) {
     categories.forEach(cat => {
       const q = cat.questions[row];
@@ -157,16 +190,16 @@ function buildGameBoard() {
 
       if (q) {
         tile.textContent = q.value;
-
         tile.addEventListener("click", () => {
           if (!tile.classList.contains("used")) {
             tile.classList.add("used");
+
             currentAnswer = q.answer.toLowerCase().trim();
             currentValue = q.value;
+
             openModal(q.question);
           }
         });
-
       } else {
         tile.style.visibility = "hidden";
       }
@@ -181,12 +214,16 @@ function buildGameBoard() {
 // Answer Submission
 // ------------------------------------
 submitBtn.addEventListener("click", () => {
+  if (!buzzWinner) {
+    alert("A player must buzz in first!");
+    return;
+  }
+
   stopTimer();
 
   const user = answerInput.value.toLowerCase().trim();
   const correct = currentAnswer.toLowerCase().trim();
 
-  // Jeopardy phrasing required
   const validForm =
     user.startsWith("what is") ||
     user.startsWith("who is") ||
@@ -195,46 +232,27 @@ submitBtn.addEventListener("click", () => {
     user.startsWith("what's") ||
     user.startsWith("who's");
 
-  // Clean up answers
-  const cleanedUser = user
-    .replace(/^(what is|what are|who is|who are|what's|who's)/, "")
-    .replace(/[^a-z0-9 ]/g, "")
-    .trim();
+  const cleanedUser = user.replace(/^(what is|what are|who is|who are|what's|who's)/, "").trim();
+  const cleanedCorrect = correct.trim();
 
-  const cleanedCorrect = correct.replace(/[^a-z0-9 ]/g, "").trim();
-
-  // Numeric handling
-  let numericAccepted = false;
-  if (!isNaN(Number(cleanedCorrect))) {
-    const wordForm = numberToWords(Number(cleanedCorrect));
-    numericAccepted =
-      cleanedUser === cleanedCorrect || cleanedUser === wordForm;
-  }
-
-  // Fuzzy matching
-  const dist = levenshtein(cleanedUser, cleanedCorrect);
-  const allowedDistance = cleanedCorrect.length <= 4 ? 1 : 2;
-  const fuzzyAccepted = dist <= allowedDistance;
-
-  // Final check
   const isCorrect =
     validForm &&
-    (numericAccepted ||
-     cleanedUser.includes(cleanedCorrect) ||
-     cleanedCorrect.includes(cleanedUser) ||
-     fuzzyAccepted);
+    (cleanedUser.includes(cleanedCorrect) ||
+     cleanedCorrect.includes(cleanedUser));
 
   if (isCorrect) {
-    alert(`Correct! +${currentValue}`);
-    score += currentValue;
+    alert(`Correct, ${buzzWinner.name}! +${currentValue}`);
+    buzzWinner.score += currentValue;
   } else {
-    alert(`Incorrect! -${currentValue}\nCorrect answer was: ${currentAnswer}`);
-    score -= currentValue;
+    alert(`Incorrect, ${buzzWinner.name}! -${currentValue}\nCorrect: ${correct}`);
+    buzzWinner.score -= currentValue;
   }
 
-  scoreDisplay.textContent = "Score: " + score;
+  updatePlayerScores();
   closeModal();
 });
 
-// Close modal
+
+
+// Close modal button
 closeBtn.addEventListener("click", closeModal);
